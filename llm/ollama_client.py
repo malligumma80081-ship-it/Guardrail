@@ -13,10 +13,11 @@ from requests.exceptions import RequestException
 OLLAMA_BASE = "http://localhost:11434"
 OLLAMA_URL = OLLAMA_BASE + "/api/generate"
 MODEL = "llama3.2"
-DEFAULT_TIMEOUT = 15
+# Fail fast: short default timeout so we fall back quickly when Ollama is down
+DEFAULT_TIMEOUT = 5
 
 
-def _is_ollama_up(timeout: float = 2.0) -> bool:
+def _is_ollama_up(timeout: float = 0.5) -> bool:
     """Try several common health endpoints to detect a running Ollama server."""
     candidates = ["/v1/health", "/health", "/api/health", "/"]
     for path in candidates:
@@ -48,14 +49,24 @@ def ask_llama(prompt: str, model: Optional[str] = None, timeout: Optional[int] =
 
     payload = {"model": model, "prompt": prompt, "stream": False}
 
-    try:
-        response = requests.post(OLLAMA_URL, json=payload, timeout=timeout)
-        response.raise_for_status()
-    except RequestException as e:
-        return (
-            f"Error: request to Ollama failed: {e}. "
-            "Check that Ollama is running and try again."
-        )
+    # Retry a few times before giving up to reduce transient failures
+    attempts = 2
+    backoff = 0.5
+    last_exc: Optional[Exception] = None
+    for attempt in range(1, attempts + 1):
+        try:
+            response = requests.post(OLLAMA_URL, json=payload, timeout=timeout)
+            response.raise_for_status()
+            break
+        except RequestException as e:
+            last_exc = e
+            if attempt < attempts:
+                import time
+                time.sleep(backoff)
+                backoff *= 2
+                continue
+            # Fail silently (return None) so caller can use a local fallback
+            return None
 
     try:
         data = response.json()
