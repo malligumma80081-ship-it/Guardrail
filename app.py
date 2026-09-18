@@ -5,7 +5,7 @@ from guardrails.pii_guard import detect_pii, mask_pii
 from llm.ollama_client import ask_llama
 
 
-def safe_response(result):
+def safe_response(result) -> str:
     if result["action"] == "block":
         return (
             "I can't help with that request. "
@@ -20,6 +20,8 @@ def safe_response(result):
             "prescriptions or dosage instructions. "
             "Please consult a qualified healthcare professional."
         )
+    
+    return ""
 
 
 def _local_fallback(user_input: str) -> str:

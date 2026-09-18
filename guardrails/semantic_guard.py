@@ -71,15 +71,6 @@ User message:
 
 def check_prompt_injection(user_input):
 
-    rule_result = detect_rule_based_injection(
-        user_input
-    )
-
-    # Fast deterministic check
-    if rule_result["is_injection"]:
-
-        return rule_result
-
     # Semantic check
     semantic_result = detect_semantic_injection(
         user_input
