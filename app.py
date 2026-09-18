@@ -106,7 +106,7 @@ Provide a clear educational answer.
 """
 
     response = ask_llama(prompt)
-    if not response:
+    if not response or str(response).lower().startswith("error:"):
         return _local_fallback(user_input)
 
     return response

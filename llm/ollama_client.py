@@ -1,76 +1,53 @@
-"""Minimal Ollama client stub for local Ollama HTTP API.
+"""Minimal Ollama client stub for local Ollama HTTP API."""
 
-This module provides a small wrapper with basic health checks and
-robust error handling so the application can surface helpful messages
-when the local Ollama server isn't running or times out.
-"""
 from typing import Optional
 
-import requests
-from requests.exceptions import RequestException
+try:
+    import requests  # type: ignore
+except Exception:
+    requests = None  # type: ignore
 
-
-OLLAMA_BASE = "http://localhost:11434"
+OLLAMA_BASE = "http://127.0.0.1:11434"
 OLLAMA_URL = OLLAMA_BASE + "/api/generate"
 MODEL = "llama3.2"
-# Fail fast: short default timeout so we fall back quickly when Ollama is down
-DEFAULT_TIMEOUT = 5
+DEFAULT_TIMEOUT = 30
 
 
-def _is_ollama_up(timeout: float = 0.5) -> bool:
-    """Try several common health endpoints to detect a running Ollama server."""
-    candidates = ["/v1/health", "/health", "/api/health", "/"]
-    for path in candidates:
-        try:
-            r = requests.get(OLLAMA_BASE + path, timeout=timeout)
-            if r.ok:
-                return True
-        except RequestException:
-            continue
-    return False
+def _is_ollama_up(timeout: float = 1.0) -> bool:
+    if not requests:
+        return False
+
+    try:
+        r = requests.get(OLLAMA_BASE + "/api/tags", timeout=timeout)
+        return r.ok
+    except requests.exceptions.RequestException:
+        return False
 
 
 def ask_llama(prompt: str, model: Optional[str] = None, timeout: Optional[int] = None) -> str:
-    """Send a request to Ollama and return a text response.
-
-    On network errors or timeouts, returns a friendly error string that the
-    caller (UI or CLI) can display to the user instead of raising.
-    """
     if model is None:
         model = MODEL
     if timeout is None:
         timeout = DEFAULT_TIMEOUT
 
+    if not requests:
+        return "Error: missing 'requests' library. Install it with 'pip install requests'"
+
     if not _is_ollama_up():
         return (
             f"Error: Unable to reach Ollama at {OLLAMA_BASE}. "
-            "Make sure the Ollama server is running and reachable on localhost:11434."
+            "Please start Ollama and make sure the model is downloaded."
         )
 
     payload = {"model": model, "prompt": prompt, "stream": False}
 
-    # Retry a few times before giving up to reduce transient failures
-    attempts = 2
-    backoff = 0.5
-    last_exc: Optional[Exception] = None
-    for attempt in range(1, attempts + 1):
-        try:
-            response = requests.post(OLLAMA_URL, json=payload, timeout=timeout)
-            response.raise_for_status()
-            break
-        except RequestException as e:
-            last_exc = e
-            if attempt < attempts:
-                import time
-                time.sleep(backoff)
-                backoff *= 2
-                continue
-            # Fail silently (return None) so caller can use a local fallback
-            return None
-
     try:
+        response = requests.post(OLLAMA_URL, json=payload, timeout=timeout)
+        response.raise_for_status()
         data = response.json()
-        # Ollama response schemas vary; prefer 'response' but fall back to text
         return data.get("response") or data.get("text") or response.text
-    except ValueError:
-        return response.text
+    except requests.exceptions.RequestException as e:
+        return (
+            f"Error: Ollama request failed. "
+            f"{type(e).__name__}: {e}"
+        )

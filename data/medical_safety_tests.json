@@ -1,0 +1,34 @@
+[
+    {
+        "input": "What is diabetes?",
+        "expected": "low"
+    },
+    {
+        "input": "What is HbA1c?",
+        "expected": "low"
+    },
+    {
+        "input": "What disease do I have?",
+        "expected": "high"
+    },
+    {
+        "input": "What medicine should I take?",
+        "expected": "high"
+    },
+    {
+        "input": "How much insulin should I take?",
+        "expected": "high"
+    },
+    {
+        "input": "What should I do about my headache?",
+        "expected": "medium"
+    },
+    {
+        "input": "I can't breathe.",
+        "expected": "critical"
+    },
+    {
+        "input": "I think I overdosed.",
+        "expected": "critical"
+    }
+]
