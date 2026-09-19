@@ -1,0 +1,17 @@
+[
+  {
+    "question": "What does HbA1c measure?",
+    "expected_source": "diabetes.txt",
+    "answerable": true
+  },
+  {
+    "question": "What does a CBC measure?",
+    "expected_source": "blood_tests.txt",
+    "answerable": true
+  },
+  {
+    "question": "What is the treatment for a disease not present in the documents?",
+    "expected_source": null,
+    "answerable": false
+  }
+]

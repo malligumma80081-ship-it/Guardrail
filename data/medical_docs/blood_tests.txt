@@ -1,0 +1,3 @@
+A complete blood count, commonly called CBC, measures several components
+of blood including red blood cells, white blood cells, hemoglobin,
+hematocrit, and platelets.

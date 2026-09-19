@@ -1,0 +1,5 @@
+Diabetes is a chronic condition associated with elevated blood glucose
+levels. Common forms include type 1 diabetes and type 2 diabetes.
+
+HbA1c is a blood test commonly used to assess average blood glucose
+levels over approximately the previous 2–3 months.
