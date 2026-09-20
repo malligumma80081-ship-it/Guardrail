@@ -1,0 +1,14 @@
+[
+  {
+    "question": "What does HbA1c measure?",
+    "context": "HbA1c reflects average blood glucose over approximately the previous 2–3 months.",
+    "answer": "HbA1c reflects average blood glucose over approximately the previous 2–3 months.",
+    "expected_quality": "high"
+  },
+  {
+    "question": "What does HbA1c measure?",
+    "context": "HbA1c reflects average blood glucose over approximately the previous 2–3 months.",
+    "answer": "HbA1c measures blood pressure.",
+    "expected_quality": "low"
+  }
+]
