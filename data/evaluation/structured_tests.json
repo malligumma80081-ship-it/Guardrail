@@ -1,0 +1,20 @@
+[
+  {
+    "input": "HbA1c: 8.2 %",
+    "expected_name": "HbA1c",
+    "expected_value": 8.2,
+    "expected_unit": "%"
+  },
+  {
+    "input": "Hemoglobin: 13.5 g/dL",
+    "expected_name": "Hemoglobin",
+    "expected_value": 13.5,
+    "expected_unit": "g/dL"
+  },
+  {
+    "input": "Platelets: 250000 /uL",
+    "expected_name": "Platelets",
+    "expected_value": 250000,
+    "expected_unit": "/uL"
+  }
+]
