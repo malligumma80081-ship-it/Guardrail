@@ -68,3 +68,23 @@ def check_input(user_input: str):
             )
 
     return allow()
+
+def validate_input(user_input: str):
+    if not user_input:
+        return {
+            "allowed": False,
+            "reason": "Empty input"
+        }
+
+    user_input = user_input.strip()
+
+    if len(user_input) > 4000:
+        return {
+            "allowed": False,
+            "reason": "Input is too long"
+        }
+
+    return {
+        "allowed": True,
+        "reason": "Input accepted"
+    }

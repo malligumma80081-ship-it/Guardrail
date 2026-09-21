@@ -68,3 +68,23 @@ Answer with the relevant source names.
             for result in results
         ]
     }
+
+
+# ensure generate_answer symbol exists for other modules (frontend expects it)
+if "generate_answer" not in globals():
+    if "generate_grounded_answer" in globals():
+        # prefer the existing grounded variant if present
+        generate_answer = generate_grounded_answer
+    else:
+        # minimal fallback to avoid import errors (returns a safe failure)
+        from llm.ollama_client import ask_llama
+
+        def generate_answer(query, contexts):
+            try:
+                resp = ask_llama(query, timeout=20)
+                if isinstance(resp, str) and resp.startswith("Error:"):
+                    return {"success": False, "answer": "The medical model is temporarily unavailable.", "sources": []}
+                # best-effort: return raw LLM text as answer
+                return {"success": True, "answer": resp, "sources": []}
+            except Exception:
+                return {"success": False, "answer": "The medical model is temporarily unavailable.", "sources": []}

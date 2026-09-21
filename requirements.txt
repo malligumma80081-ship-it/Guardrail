@@ -1,0 +1,5 @@
+ollama
+faiss-cpu
+sentence-transformers
+pydantic
+streamlit
