@@ -47,3 +47,31 @@ def retrieve(query, top_k=2):
         })
 
     return results
+
+def safe_retrieve(query, top_k=3):
+
+    try:
+
+        results = retrieve(query, top_k)
+
+        if not results:
+
+            return {
+                "success": False,
+                "results": [],
+                "reason": "No documents found"
+            }
+
+        return {
+            "success": True,
+            "results": results,
+            "reason": None
+        }
+
+    except Exception as e:
+
+        return {
+            "success": False,
+            "results": [],
+            "reason": "Retriever failure"
+        }

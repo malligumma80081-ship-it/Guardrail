@@ -3,6 +3,8 @@ from guardrails.injection_guard import check_prompt_injection
 from guardrails.medical_risk import classify_medical_risk
 from guardrails.pii_guard import detect_pii, mask_pii
 from llm.ollama_client import ask_llama
+from utils.errors import LLMError
+from utils.retry import retry_with_backoff
 
 
 def safe_response(result) -> str:
@@ -60,47 +62,65 @@ def _local_fallback(user_input: str) -> str:
     )
 
 
+def llm_failure_response():
+    return (
+        "The medical model is temporarily unavailable. "
+        "Please try again later or consult a healthcare professional."
+    )
+
+
+def call_llm():
+    def operation():
+        result = ask_llama("Hello")
+        if str(result).lower().startswith("error:"):
+            raise LLMError(result)
+        return result
+
+    return retry_with_backoff(operation, max_retries=2, base_delay=1)
+
+
 def medical_chatbot(user_input: str) -> str:
-    pii_result = detect_pii(user_input)
+    try:
+        pii_result = detect_pii(user_input)
 
-    if pii_result.get("contains_pii"):
-        user_input = mask_pii(user_input)
+        if pii_result.get("contains_pii"):
+            user_input = mask_pii(user_input)
 
-    input_result = check_input(user_input)
-    if not input_result["allowed"]:
-        return safe_response(input_result)
+        input_result = check_input(user_input)
+        if not input_result["allowed"]:
+            return safe_response(input_result)
 
-    injection_result = check_prompt_injection(user_input)
-    if injection_result.get("is_injection"):
-        return (
-            "I can't process that request because it appears to contain an attempt to "
-            "bypass the chatbot's safety instructions."
-        )
+        injection_result = check_prompt_injection(user_input)
+        if injection_result.get("is_injection"):
+            return (
+                "I can't process that request because it appears to contain an attempt to "
+                "bypass the chatbot's safety instructions."
+            )
 
-    medical_result = classify_medical_risk(user_input)
-    action = medical_result.get("action")
+        medical_result = classify_medical_risk(user_input)
+        action = medical_result.get("action")
 
-    if action == "block":
-        return (
-            "I'm designed to provide general medical information. I can't help with requests "
-            "outside that area."
-        )
+        if action == "block":
+            return (
+                "I'm designed to provide general medical information. I can't help with requests "
+                "outside that area."
+            )
 
-    if action == "emergency_redirect":
-        return (
-            "This may be an emergency situation. Please seek immediate medical attention "
-            "or contact your local emergency services. I can't safely manage an emergency through "
-            "this chatbot."
-        )
+        if action == "emergency_redirect":
+            return (
+                "This may be an emergency situation. Please seek immediate medical attention "
+                "or contact your local emergency services. I can't safely manage an emergency through "
+                "this chatbot."
+            )
 
-    if action == "redirect":
-        return (
-            "I can provide general medical information, but I can't provide a personalized "
-            "diagnosis, prescription, or dosage recommendation. Please consult a qualified "
-            "healthcare professional."
-        )
+        if action == "redirect":
+            return (
+                "I can provide general medical information, but I can't provide a personalized "
+                "diagnosis, prescription, or dosage recommendation. Please consult a qualified "
+                "healthcare professional."
+            )
 
-    prompt = f"""
+        prompt = f"""
 You are a medical education assistant.
 
 Provide general educational information.
@@ -119,22 +139,25 @@ User question:
 Provide a clear educational answer.
 """
 
-    response = ask_llama(prompt)
-    if not response or str(response).lower().startswith("error:"):
-        return _local_fallback(user_input)
+        response = ask_llama(prompt)
+        if not response or str(response).lower().startswith("error:"):
+            return _local_fallback(user_input)
 
-    output_result = validate_and_sanitize_output(response)
+        output_result = validate_and_sanitize_output(response)
 
-    if output_result["action"] == "allow":
-        return response
+        if output_result["action"] == "allow":
+            return response
 
-    if output_result["action"] == "mask":
-        return output_result["text"]
+        if output_result["action"] == "mask":
+            return output_result["text"]
 
-    return (
-        "I can't provide that type of medical guidance. "
-        "Please consult a qualified healthcare professional."
-    )
+        return (
+            "I can't provide that type of medical guidance. "
+            "Please consult a qualified healthcare professional."
+        )
+
+    except LLMError:
+        return llm_failure_response()
 
 
 if __name__ == "__main__":
